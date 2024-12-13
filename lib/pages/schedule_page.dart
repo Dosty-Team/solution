@@ -1,3 +1,4 @@
+import 'package:flowmi/components/top_bar/top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 // import 'package:withoutmap/Notification/notification.dart';
@@ -11,6 +12,10 @@ class SchedulePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: TopBar(title: 'Routine'),
+      ),
       body: Stack(
         children: <Widget>[
           Positioned.fill(
@@ -21,7 +26,7 @@ class SchedulePage extends StatelessWidget {
           SafeArea(
             child: Column(
               children: <Widget>[
-                buildTopNav(),
+                // buildTopNav(),
                 buildBottomafternav(),
                 buildScheduleIndicator(context),
                 buildHeading(),
@@ -40,54 +45,54 @@ class SchedulePage extends StatelessWidget {
     );
   }
 
-  Widget buildTopNav() {
-  return Container(
-    decoration: BoxDecoration(
-      image: DecorationImage(
-        image: AssetImage('assets/routebg.png'),
-        fit: BoxFit.cover,
-      ),
-    ),
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              IconButton(
-                icon: SvgPicture.asset('assets/left-icon.svg', color: Colors.white, height: 38, width: 38),
-                onPressed: () {
-                  // Define the back button action, e.g., Navigator.pop(context);
-                },
-              ),
-              Expanded(
-                child: Text(
-                  "Routine",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-              Opacity(
-                opacity: 0,
-                child: IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {},
-                ),
-              ),
-            ],
-          ),
-        ),
-          // Add a SizedBox for spacing at the bottom
-      ],
-    ),
-  );
-}
+//   Widget buildTopNav() {
+//   return Container(
+//     decoration: BoxDecoration(
+//       image: DecorationImage(
+//         image: AssetImage('assets/schedule/routebg.png'),
+//         fit: BoxFit.cover,
+//       ),
+//     ),
+//     child: Column(
+//       children: [
+//         Padding(
+//           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 15),
+//           child: Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//             children: <Widget>[
+//               IconButton(
+//                 icon: SvgPicture.asset('assets/schedule/left-icon.svg', color: Colors.white, height: 38, width: 38),
+//                 onPressed: () {
+//                   // Define the back button action, e.g., Navigator.pop(context);
+//                 },
+//               ),
+//               Expanded(
+//                 child: Text(
+//                   "Routine",
+//                   textAlign: TextAlign.center,
+//                   style: TextStyle(
+//                     color: Colors.white,
+//                     fontSize: 24,
+//                     fontWeight: FontWeight.w600,
+//                     fontFamily: 'Poppins',
+//                   ),
+//                 ),
+//               ),
+//               Opacity(
+//                 opacity: 0,
+//                 child: IconButton(
+//                   icon: Icon(Icons.search),
+//                   onPressed: () {},
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//           // Add a SizedBox for spacing at the bottom
+//       ],
+//     ),
+//   );
+// }
 Widget buildBottomafternav() {
   return SizedBox(
     height: 35,
@@ -121,7 +126,7 @@ Widget buildScheduleIndicator(BuildContext context) {
           mainAxisSize: MainAxisSize.min, // Center align the contents
           children: <Widget>[
             SvgPicture.asset(
-              'assets/average-indicator-home-icon.svg',
+              'assets/schedule/average-indicator-home-icon.svg',
               height: 48, // Slightly reduced to fit better within the new height
               width: 48,
             ),
@@ -155,7 +160,7 @@ Widget buildScheduleIndicator(BuildContext context) {
               ),
               
             SvgPicture.asset(
-              'assets/average-indicator-destination-icon.svg',
+              'assets/schedule/average-indicator-destination-icon.svg',
               height: 48, // Consistent size with the other icon
               width: 48,
             ),
@@ -246,7 +251,7 @@ Widget buildHeading() {
       ),
       child: ListTile(
         leading: SvgPicture.asset(
-          'assets/calendericon.svg',
+          'assets/schedule/calendericon.svg',
           height: 38,
           width: 38,
         ),
@@ -263,12 +268,12 @@ Widget buildHeading() {
 //         mainAxisAlignment: MainAxisAlignment.spaceAround,
 //         children: <Widget>[
 //           SvgPicture.asset(
-//             'assets/calendericon.svg',
+//             'assets/schedule/calendericon.svg',
 //             height: 24,
 //             width: 24,
 //           ),
 //           IconButton(
-//             icon: SvgPicture.asset('assets/calendericon.svg', height: 24, width: 24),
+//             icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
 //             onPressed: () {
 //               Navigator.push(
 //                 context,
@@ -278,7 +283,7 @@ Widget buildHeading() {
 //           ),
            
 //           IconButton(
-//             icon: SvgPicture.asset('assets/calendericon.svg', height: 24, width: 24),
+//             icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
 //             onPressed: () {
 //               Navigator.push(
 //                 context,
@@ -288,7 +293,7 @@ Widget buildHeading() {
 //           ),
            
 //            IconButton(
-//   icon: SvgPicture.asset('assets/calendericon.svg', height: 24, width: 24),
+//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
 //   onPressed: () {
 //     Navigator.push(
 //       context,
@@ -297,7 +302,7 @@ Widget buildHeading() {
 //   },
 // ),
 //           IconButton(
-//   icon: SvgPicture.asset('assets/calendericon.svg', height: 24, width: 24),
+//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
 //   onPressed: () {
 //     // Navigator push method to navigate to the new page
 //     Navigator.push(
@@ -309,7 +314,7 @@ Widget buildHeading() {
 // IconButton(
   
 
-//   icon: SvgPicture.asset('assets/calendericon.svg', height: 24, width: 24),
+//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
 //   onPressed: () {
 //     // Navigator push method to navigate to the new page
 //     Navigator.push(
