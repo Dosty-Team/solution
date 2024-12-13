@@ -1,4 +1,5 @@
 import 'package:flowmi/components/top_bar/top_bar.dart';
+import 'package:flowmi/my_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 // import 'package:withoutmap/Notification/notification.dart';
@@ -16,7 +17,7 @@ class SchedulePage extends StatelessWidget {
         preferredSize: const Size.fromHeight(60),
         child: TopBar(title: 'Routine'),
       ),
-      body: Stack(
+      body: Column(
         children: <Widget>[
           Positioned.fill(
             child: Container(
@@ -32,14 +33,93 @@ class SchedulePage extends StatelessWidget {
                 buildHeading(),
                 
                 SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.55,
+                  height: MediaQuery.of(context).size.height*0.55,
                   child: buildTaskList(),
                 ),
+                // SizedBox(height: 20,),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                      color: Colors.white, // Optional: add background color if needed
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20.0),
+                        topRight: Radius.circular(20.0),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 7,
+                          offset: const Offset(0, -5), // changes position
+                        ),
+                      ],
+                    ),
+                  child: ClipRRect( // Clip the rounded corners
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(15.0),
+                      topRight: Radius.circular(15.0),
+                    ),
+                    
+                    child: Container(
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                          color: Colors.white, // Optional: add background color if needed
+                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0), // Inner padding
+                        child: Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.zero, // Removes default padding
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50), // Rounded corners
+                              ),
+                            ),
+                            // ************************ Add Task Button Event Handler ************************
+                            onPressed: () {},
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [purpleTheme, blueTheme],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  '+ Add Task',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 13
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      ),
+                    ),
+                  ),)
+                ),
               ],
+              
             ),
           ),
+          
         ],
-      ),    
+        
+      ),   
+       
       // IF GIVER LE COMMUTE PAGE KO FLOATING WINDOW BANAYENA VANE: USE THIS : floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       // floatingActionButton: buildFloatingAddTaskButton(),
     );
@@ -103,7 +183,7 @@ Widget buildScheduleIndicator(BuildContext context) {
             
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 5), // Different vertical padding
-    child: SizedBox(height: 86, // Adjusted for better proportionality
+    child: SizedBox(height: 70, // Adjusted for better proportionality
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16), // Padding inside the container for elements
         decoration: BoxDecoration(
@@ -198,8 +278,8 @@ Widget buildHeading() {
               child: Text(
                 "Today's Schedule",
                 style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
+                  fontSize: largerText,
+                  fontWeight: FontWeight.w600,
                   fontFamily: 'Poppins',
                 ),
               ),
@@ -213,23 +293,37 @@ Widget buildHeading() {
 }
 
 
-
-
-
   Widget buildTaskList() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: <Widget>[
-        buildTask("Workout", "08:00 AM"),
-        buildTask("Eat Lunch", "10:00 AM"),
-        buildTask("Iron Shirt", "10:45 AM"),
-        buildTask("Drink Coffee", "10:50 AM"),
-        buildTask("Departure", "11:00 AM"),
-        buildTask("Departure", "11:00 AM"),
-        buildTask("Departure", "11:00 AM"),
-      ],
-    );
-  }
+  return ListView(
+          padding: const EdgeInsets.all(20),
+          children: <Widget>[
+            buildTask("Workout", "08:00 AM"),
+            buildTask("Eat Lunch", "10:00 AM"),
+            buildTask("Iron Shirt", "10:45 AM"),
+            buildTask("Drink Coffee", "10:50 AM"),
+            buildTask("Departure", "11:00 AM"),
+            buildTask("Departure", "11:00 AM"),
+            buildTask("Departure", "11:00 AM"),
+          ],
+  );
+}
+
+// Widget buildTaskList() {
+//   return SizedBox.expand(
+//     child: ListView(
+//       padding: const EdgeInsets.all(20),
+//       children: <Widget>[
+//         buildTask("Workout", "08:00 AM"),
+//         buildTask("Eat Lunch", "10:00 AM"),
+//         buildTask("Iron Shirt", "10:45 AM"),
+//         buildTask("Drink Coffee", "10:50 AM"),
+//         buildTask("Departure", "11:00 AM"),
+//         buildTask("Departure", "11:00 AM"),
+//         buildTask("Departure", "11:00 AM"),
+//       ],
+//     ),
+//   );
+// }
 
   Widget buildTask(String name, String time) {
     return Container(
@@ -242,10 +336,10 @@ Widget buildHeading() {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: Offset(0, 3),
+            color: Colors.grey.withOpacity(0.4),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: Offset(0, 1),
           ),
         ],
       ),
