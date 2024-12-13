@@ -98,8 +98,8 @@ class SchedulePage extends StatelessWidget {
                                   '+ Add Task',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 13
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: smallText
                                   ),
                                 ),
                               ),
