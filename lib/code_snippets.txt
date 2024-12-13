@@ -1,0 +1,23 @@
+final List<Map<String, String>> camData = [
+    {
+      'image': 'https://via.placeholder.com/600x900',
+      'title': 'Swoyambhu',
+      'traffic': 'Medium',
+      'weather': 'Cloudy',
+      'cam': 'Cam: 01'
+    },
+    {
+      'image': 'https://via.placeholder.com/600x900',
+      'title': 'Balkhu',
+      'traffic': 'Low',
+      'weather': 'Sunny',
+      'cam': 'Cam: 02'
+    },
+    {
+      'image': 'https://via.placeholder.com/600x900',
+      'title': 'Maitideviv',
+      'traffic': 'High',
+      'weather': 'Cloudy',
+      'cam': 'Cam: 03'
+    },
+  ];
