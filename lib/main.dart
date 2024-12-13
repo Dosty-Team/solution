@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flowmi/components/page_slider/page_slider.dart';
+import 'package:flowmi/pages/schedule_page.dart';
 import 'package:flowmi/pages/setting_page.dart';
 import 'package:flowmi/routes/app_routes.dart';
 import 'package:flowmi/state_manage/map_state/map_provider.dart';
@@ -72,7 +73,7 @@ void initState() {
 	  // ***************** Page Selector ******************
       body:PageSliderCarousel(
         pages: [
-          Center(child: Text('Page 1')),
+          Center(child: SchedulePage()),
           Center(child: Text('Page 2')),
           Center(child: MapPage()),
           Center(child: Text('Page 4')),

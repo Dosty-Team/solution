@@ -4,6 +4,7 @@ import 'package:flowmi/pages/edit_task.dart';
 import 'package:flowmi/pages/live_cam_page.dart';
 import 'package:flowmi/pages/login.dart';
 import 'package:flowmi/pages/manage_notification.dart';
+import 'package:flowmi/pages/schedule_page.dart';
 import 'package:flowmi/pages/set_commute..dart';
 import 'package:flowmi/pages/set_task.dart';
 import 'package:flowmi/pages/set_timing.dart';
