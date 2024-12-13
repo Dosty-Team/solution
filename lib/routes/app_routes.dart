@@ -55,7 +55,7 @@ class FlowmiAppRouter{
        GoRoute(
         path: '/manage_notification',
         builder: (context, state) {
-          return ManageNotificationPage();
+          return ManageNotificationsPage();
         },
       ),
        GoRoute(
