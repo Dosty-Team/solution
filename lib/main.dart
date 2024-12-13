@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flowmi/components/page_slider/page_slider.dart';
+import 'package:flowmi/pages/analysis/trafficmap.dart';
 import 'package:flowmi/pages/schedule_page.dart';
 import 'package:flowmi/pages/setting_page.dart';
 import 'package:flowmi/routes/app_routes.dart';
@@ -74,7 +75,7 @@ void initState() {
       body:PageSliderCarousel(
         pages: [
           Center(child: SchedulePage()),
-          Center(child: Text('Page 2')),
+          Center(child: CommuteAnalysisPage()),
           Center(child: MapPage()),
           Center(child: Text('Page 4')),
           Center(child: SettingPage()),
