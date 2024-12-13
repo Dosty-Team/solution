@@ -2,14 +2,70 @@ import 'package:flowmi/components/top_bar/top_bar.dart';
 import 'package:flowmi/my_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 // import 'package:withoutmap/Notification/notification.dart';
 // import 'package:withoutmap/login/login.dart';
 // import 'recommend/recommend_commute_page.dart';
 // import 'setting/settings_page.dart';  // Import the settings page
 // import 'analysis/trafficmap.dart';
 
+class SchedulePage extends StatefulWidget {
+  const SchedulePage({super.key});
 
-class SchedulePage extends StatelessWidget {
+  @override
+  State<SchedulePage> createState() => _SchedulePageState();
+}
+
+class _SchedulePageState extends State<SchedulePage> {
+    late mongo.DbCollection tasksCollection;
+
+  List<Task> tasks = [
+    Task(
+      taskName: 'Task Name',
+      startTime: TimeOfDay.now(),
+      endTime: TimeOfDay.now(),
+      priority: 'Medium',
+    ),
+  ];
+    @override
+    void initState() {
+      super.initState();
+        _connectToMongo();
+    }
+    Future<void> _connectToMongo() async {
+    final db = await mongo.Db.create('mongodb+srv://giver_kdk:giverdb123@cluster0.lfo9ghw.mongodb.net/flowmi_db?retryWrites=true&w=majority&appName=Cluster0'); // Replace with your MongoDB URI
+    await db.open();
+    tasksCollection = db.collection('tasks');
+    await _fetchTasks();
+  }
+
+  Task fromMap(Map<String, dynamic> map) {
+    return Task(
+		taskName: map["taskName"],
+		startTime: parseTime(map["startTime"]),
+		endTime: parseTime(map["endTime"]),
+		priority: map["priority"],
+	);
+  }
+Map<String, dynamic> toMap(Task task) {
+    return {
+      'taskName': task.taskName,
+      'startTime': task.startTime,
+      'endTime': task.endTime,
+      'priority': task.priority,
+    };
+  }
+
+  Future<void> _fetchTasks() async {
+    final tasksFromDb = await tasksCollection.find().toList();
+	print("FETCH**********");
+	// print(tasksFromDb);
+    setState(() {
+		tasks = tasksFromDb.map((map) => fromMap(map)).toList();
+		print(tasks[0].taskName);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,7 +137,9 @@ class SchedulePage extends StatelessWidget {
                               ),
                             ),
                             // ************************ Add Task Button Event Handler ************************
-                            onPressed: () {},
+                            onPressed: () {
+                              GoRouter.of(context).push("/set_task");
+                            },
                             child: Ink(
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
@@ -295,16 +353,10 @@ Widget buildHeading() {
 
   Widget buildTaskList() {
   return ListView(
-          padding: const EdgeInsets.all(20),
-          children: <Widget>[
-            buildTask("Workout", "08:00 AM"),
-            buildTask("Eat Lunch", "10:00 AM"),
-            buildTask("Iron Shirt", "10:45 AM"),
-            buildTask("Drink Coffee", "10:50 AM"),
-            buildTask("Departure", "11:00 AM"),
-            buildTask("Departure", "11:00 AM"),
-            buildTask("Departure", "11:00 AM"),
-          ],
+    padding: const EdgeInsets.all(20),
+    children: tasks.map((task) {
+      return buildTask(task.taskName, formatTimeOfDay(task.startTime));
+    }).toList(),
   );
 }
 
@@ -473,4 +525,47 @@ Widget buildHeading() {
   // }
 
 // }
- 
+ class Task {
+  String taskName;
+  TimeOfDay startTime;
+  TimeOfDay endTime;
+  String priority;
+
+  Task({
+    required this.taskName,
+    required this.startTime,
+    required this.endTime,
+    required this.priority,
+  });
+}
+TimeOfDay parseTime(String timeString) {
+  // Parse the string to extract the hour and minute
+  final format = RegExp(r'(\d+):(\d+)\s*(AM|PM)', caseSensitive: false);
+  final match = format.firstMatch(timeString);
+
+  if (match != null) {
+    int hour = int.parse(match.group(1)!);
+    int minute = int.parse(match.group(2)!);
+    String period = match.group(3)!.toUpperCase();
+
+    // Convert to 24-hour format if PM
+    if (period == "PM" && hour != 12) {
+      hour += 12;
+    }
+    // Adjust for midnight (12:00 AM)
+    if (period == "AM" && hour == 12) {
+      hour = 0;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  } else {
+    throw FormatException("Invalid time format: $timeString");
+  }
+}
+String formatTimeOfDay(TimeOfDay time) {
+  final String hour = time.hourOfPeriod.toString().padLeft(2, '0'); // Ensures 2-digit hour
+  final String minute = time.minute.toString().padLeft(2, '0'); // Ensures 2-digit minute
+  final String period = time.period == DayPeriod.am ? "AM" : "PM";
+
+  return "$hour:$minute $period";
+}
