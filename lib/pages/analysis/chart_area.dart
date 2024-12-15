@@ -114,7 +114,7 @@ class ChartArea extends StatelessWidget {
                             final barColors = getGradientColorsForCategory(category);
                             return Container(
                               width: 24,
-                              height: (h / 100) * chartHeight,
+                              height: (h / 7) * chartHeight,// Adjusted height for chart 
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: barColors,
@@ -136,7 +136,7 @@ class ChartArea extends StatelessWidget {
                     children: times.map((time) {
                       return Text(
                         time,
-                        style: const TextStyle(fontSize: 12, color: Colors.black),
+                        style: const TextStyle(fontSize: 9, color: Colors.black),
                       );
                     }).toList(),
                   ),
@@ -150,10 +150,6 @@ class ChartArea extends StatelessWidget {
   }
 
   /// Determine gradient colors for a bar based on traffic category.
-  /// For demonstration:
-  /// - "No congestion" = Green gradient
-  /// - "light" or "medium" = Yellowish gradient
-  /// - "heavy" = Red gradient
   List<Color> getGradientColorsForCategory(String category) {
     if (category.contains("heavy")) {
       return [Colors.red, Colors.orangeAccent];

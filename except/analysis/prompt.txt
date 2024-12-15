@@ -1,0 +1,510 @@
+
+
+flutter code:
+
+i want to modify this flutter page to represent multiple chart for each alternative route, like the python code below.
+i want my flutter page to represent the chart like python code below
+
+
+import 'dart:developer'; // for logging
+import 'package:flutter/material.dart';
+import 'chart_area.dart';
+
+/// A page that allows users to input data and generate a commute analysis chart.
+///
+/// Users can input time labels, heights, and interval values. When valid data is provided,
+/// a chart is rendered displaying the bars and their associated times.
+class CommuteAnalysisPage extends StatefulWidget {
+  @override
+  _CommuteAnalysisPageState createState() => _CommuteAnalysisPageState();
+}
+
+class _CommuteAnalysisPageState extends State<CommuteAnalysisPage> {
+  // Controllers for user inputs
+  final TextEditingController _timesController = TextEditingController();
+  final TextEditingController _heightsController = TextEditingController();
+  final TextEditingController _intervalController = TextEditingController();
+
+  // Parsed and validated data
+  List<String> _times = [];
+  List<double> _heights = [];
+  int _interval = 10; // default interval if none provided
+
+  /// Checks if the chart data (times and heights) is valid for rendering.
+  bool get isChartDataValid => _times.isNotEmpty && _heights.isNotEmpty && _times.length == _heights.length;
+
+  /// Attempts to parse and validate user inputs, then updates the chart data if valid.
+  void _generateChart() {
+    log('Attempting to generate chart...');
+
+    // Gather raw input strings
+    final timesInput = _timesController.text.trim();
+    final heightsInput = _heightsController.text.trim();
+    final intervalInput = _intervalController.text.trim();
+
+    // Validate presence of inputs
+    if (timesInput.isEmpty || heightsInput.isEmpty || intervalInput.isEmpty) {
+      log('Validation failed: One or more input fields are empty.');
+      _showError('Please provide valid inputs.');
+      return;
+    }
+
+    // Parse times and heights
+    final times = timesInput.split(',').map((t) => t.trim()).toList();
+    final heightsParsed = heightsInput.split(',').map((h) => double.tryParse(h.trim())).toList();
+
+    // Validate numeric heights
+    if (heightsParsed.contains(null)) {
+      log('Validation failed: Non-numeric height value found.');
+      _showError('Heights must be numeric values.');
+      return;
+    }
+
+    // Parse and validate interval
+    final parsedInterval = int.tryParse(intervalInput);
+    if (parsedInterval == null || parsedInterval <= 0) {
+      log('Validation failed: Interval is non-numeric or non-positive.');
+      _showError('Interval must be a positive integer.');
+      return;
+    }
+
+    // Check length consistency
+    if (times.length != heightsParsed.length) {
+      log('Validation failed: Mismatch in number of times and heights.');
+      _showError('Number of times and heights must match.');
+      return;
+    }
+
+    // Validate height ranges
+    if (heightsParsed.any((h) => h! < 0 || h > 100)) {
+      log('Validation failed: One or more heights are out of the 0-100 range.');
+      _showError('Heights must be between 0 and 100.');
+      return;
+    }
+
+    // If we reach here, inputs are valid.
+    log('Inputs validated successfully. Updating state with new chart data.');
+    setState(() {
+      _times = times;
+      _heights = heightsParsed.cast<double>();
+      _interval = parsedInterval;
+    });
+  }
+
+  /// Displays an error message in a dialog.
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Invalid Input'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              log('Error dialog dismissed.');
+            },
+            child: const Text('OK'),
+          )
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxWidth = 400.0;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6a11cb), Color(0xFF2575fc)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: maxWidth,
+            padding: const EdgeInsets.all(10),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Header Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          // TODO: Implement back navigation if needed.
+                          log('Back button pressed.');
+                        },
+                      ),
+                      const Text(
+                        'Commute Analysis',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                      const SizedBox(width: 48), // Spacer to balance layout
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Input Fields Section
+                  _buildTextField(
+                    controller: _timesController,
+                    hintText: 'Enter times (e.g. 8:00am, 8:30am)',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    controller: _heightsController,
+                    hintText: 'Enter heights (0-100) (e.g. 50, 75)',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    controller: _intervalController,
+                    hintText: 'Enter interval (in minutes)',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _generateChart,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Generate Chart'),
+                  ),
+
+                  const SizedBox(height: 20),
+                  // Chart Display Card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          offset: const Offset(0, 4),
+                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.1),
+                        )
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      children: [
+                        // Card Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Route 1',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF9c27b0),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'Optimal',
+                                style: TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        // Chart Area
+                        ChartArea(
+                          times: _times,
+                          heights: _heights,
+                          interval: _interval,
+                          isChartDataValid: isChartDataValid,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A helper method to build styled [TextField] widgets for inputs.
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Colors.white70),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.2),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+/// A widget that displays the chart area with grid lines, bars, and associated time labels.
+///
+/// This widget takes:
+/// - [times]: A list of time labels corresponding to each bar.
+/// - [heights]: A list of bar heights (0-100).
+/// - [interval]: The interval in minutes for the grid lines.
+/// - [isChartDataValid]: A boolean indicating if there's valid chart data to display.
+///
+/// If data is invalid, a placeholder "No Data" message is shown.
+class ChartArea extends StatelessWidget {
+  final List<String> times;
+  final List<double> heights;
+  final int interval;
+  final bool isChartDataValid;
+
+  const ChartArea({
+    Key? key,
+    required this.times,
+    required this.heights,
+    required this.interval,
+    required this.isChartDataValid,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    const chartHeight = 350.0;
+
+    // If data is invalid, display a placeholder.
+    if (!isChartDataValid) {
+      return Container(
+        height: chartHeight,
+        color: const Color(0xFFF0F0F0),
+        alignment: Alignment.center,
+        child: const Text('No Data', style: TextStyle(color: Colors.black54)),
+      );
+    }
+
+    // Calculate number of grid lines based on a fixed 50-minute scale.
+    final numLines = (50 / interval).ceil();
+
+    // Prepare interval labels on the left.
+    List<Widget> intervalLabels = [];
+    for (int i = 0; i <= numLines; i++) {
+      double ratio = (i * interval) / 50.0;
+      double linePos = ratio * chartHeight;
+      intervalLabels.add(
+        Positioned(
+          bottom: linePos,
+          left: 0,
+          child: Text(
+            '${i * interval}min',
+            style: const TextStyle(color: Colors.black, fontSize: 10),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left column for interval labels
+            SizedBox(
+              width: 40,
+              height: chartHeight,
+              child: Stack(
+                children: intervalLabels,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Right side for chart (lines + bars), then labels below
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Chart area with bars and grid lines
+                  Stack(
+                    children: [
+                      Container(
+                        height: chartHeight,
+                        color: const Color(0xFFFFFFFF),
+                      ),
+                      // Grid lines
+                      ...List.generate(numLines + 1, (i) {
+                        double ratio = (i * interval) / 50.0;
+                        double linePos = ratio * chartHeight;
+                        return Positioned(
+                          bottom: linePos,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 1,
+                            color: const Color.fromARGB(255, 230, 230, 230),
+                          ),
+                        );
+                      }),
+                      // Bars at the bottom of the chart
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: heights.map((h) {
+                            return Container(
+                              width: 24,
+                              height: (h / 100) * chartHeight,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.green, Colors.yellow, Colors.red],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Labels row below the chart area to align with bars
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: times.map((time) {
+                      return Text(
+                        time,
+                        style: const TextStyle(fontSize: 12, color: Colors.black),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+python code: 
+# AIzaSyCNd3OWwHFDxhTzbeYonZMd4nCC2yPGxMI
+import datetime
+import calendar
+import requests
+import matplotlib.pyplot as plt
+
+def get_travel_time(url, departure_time):
+    """Fetches travel time data from Google Maps Directions API."""
+    if '?' in url:
+        url += '&traffic_model=best_guess'
+    else:
+        url += '?traffic_model=best_guess'
+
+    departure_time_unix = calendar.timegm(departure_time.utctimetuple())
+    if '&departure_time' in url:
+        updated_url = url.split('&departure_time')[0] + f"&departure_time={departure_time_unix}" + url.split('&departure_time')[1]
+    else:
+        updated_url = url + f"&departure_time={departure_time_unix}"
+
+    response = requests.get(updated_url)
+    data = response.json()
+
+    if data['status'] == 'OK':
+        return [leg['duration_in_traffic']['value'] / 60 for route in data['routes'] for leg in route['legs']]
+    else:
+        print(f"Error: {data['status']}")
+        return None
+
+def main():
+    """Main function to get travel times, categorize traffic, and plot."""
+    url = 'https://maps.googleapis.com/maps/api/directions/json?origin=24.85085,67.01778&destination=24.8657238,67.0142184&alternatives=true&key=AIzaSyCNd3OWwHFDxhTzbeYonZMd4nCC2yPGxMI'  # Replace with your API key
+
+    baseline_time = datetime.datetime(year=2024, month=12, day=14, hour=3, minute=0)
+    baseline_travel_time = get_travel_time(url, baseline_time)
+
+    if baseline_travel_time:
+        baseline_travel_time = baseline_travel_time[0]
+        initial_time = datetime.datetime.utcnow()
+        travel_times = get_travel_time(url, initial_time)
+
+        if travel_times:
+            num_routes = len(travel_times)
+            times = [initial_time + datetime.timedelta(minutes=i * 10) for i in range(6)]
+            time_labels = [(initial_time + datetime.timedelta(minutes=i * 10)).strftime('%H:%M') for i in range(6)]
+
+            for route_num in range(num_routes):
+                route_times = []
+                for i in range(6):
+                    departure_time = initial_time + datetime.timedelta(minutes=i * 10)
+                    current_travel_times = get_travel_time(url, departure_time)
+
+                    if current_travel_times:
+                        current_travel_time = current_travel_times[route_num]
+                        route_times.append(current_travel_time)
+
+                        total_extra_time = current_travel_time - baseline_travel_time
+                        congestion_threshold = baseline_travel_time * 0.20
+
+                        if total_extra_time > congestion_threshold:
+                            time_in_congestion = total_extra_time - congestion_threshold
+                            time_in_slow_move = congestion_threshold
+                        else:
+                            time_in_congestion = 0
+                            time_in_slow_move = total_extra_time
+
+                        if total_extra_time > 0:
+                            if time_in_congestion >= 5:
+                                traffic_category = f"{time_in_congestion:.2f} min heavy congestion"
+                            elif time_in_congestion >= 2:
+                                traffic_category = f"{time_in_congestion:.2f} min medium traffic"
+                            else:
+                                traffic_category = f"{time_in_congestion:.2f} min light congestion"
+                        else:
+                            traffic_category = "No congestion"
+
+                        print(f"Route {route_num + 1} - {time_labels[i]}: Current: {current_travel_time:.2f} min, Normal: {baseline_travel_time:.2f} min, Slow Move: {time_in_slow_move:.2f} min, Congestion: {time_in_congestion:.2f} min, {traffic_category}")
+
+                plt.figure(figsize=(10, 6))
+                normal_times = [baseline_travel_time] * len(route_times)
+                congestion_times = [t - baseline_travel_time if t > baseline_travel_time else 0 for t in route_times]
+
+                width = 0.35
+                
+                plt.bar(time_labels, normal_times, width, label='Normal Time', color='skyblue')
+                plt.bar([x + width for x in range(len(time_labels))], congestion_times, width, label='Congestion Time', color='orange')
+
+                plt.xlabel('Time')
+                plt.ylabel('Travel Time (minutes)')
+                plt.title(f'Predicted Travel Time - Route {route_num+1}')
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                plt.show()
+        else:
+            print("Could not retrieve initial travel times.")
+    else:
+        print("Could not retrieve baseline travel time.")
+
+if __name__ == "__main__":
+    main()
+

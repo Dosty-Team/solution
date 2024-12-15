@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flowmi/components/bottom_navbar/custom_bottom_navbar.dart';
 import 'package:flowmi/components/top_bar/top_bar.dart';
 import 'package:flowmi/my_styles.dart';
+import 'package:flowmi/pages/mapentry.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
@@ -104,6 +105,7 @@ Map<String, dynamic> toMap(Task task) {
         child: Column(
           children: [
             // First section
+            MyDirectionsScreen(),
             Padding(
               padding: EdgeInsets.all(16.0),
               child: Column(

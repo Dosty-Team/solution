@@ -5,13 +5,15 @@ import 'package:flowmi/pages/live_cam_page.dart';
 import 'package:flowmi/pages/login.dart';
 import 'package:flowmi/pages/manage_notification.dart';
 import 'package:flowmi/pages/schedule_page.dart';
-import 'package:flowmi/pages/set_commute..dart';
+import 'package:flowmi/pages/set_commute.dart' as commute;
+ 
 import 'package:flowmi/pages/set_task.dart';
 import 'package:flowmi/pages/set_timing.dart';
 import 'package:flowmi/pages/setting_page.dart';
 import 'package:go_router/go_router.dart';
 import "../my_styles.dart";
-
+import 'package:flowmi/my_styles.dart' as styles;
+ 
 class FlowmiAppRouter{
   final GoRouter router = GoRouter(
     // Initially go to the the map page index
@@ -24,7 +26,7 @@ class FlowmiAppRouter{
       GoRoute(
         path: '/set_commute',
         builder: (context, state) {
-          return SetCommutePage();
+          return commute.SetCommutePage();
         },
       ),
       GoRoute(

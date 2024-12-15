@@ -4,11 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-// import 'package:withoutmap/Notification/notification.dart';
-// import 'package:withoutmap/login/login.dart';
-// import 'recommend/recommend_commute_page.dart';
-// import 'setting/settings_page.dart';  // Import the settings page
-// import 'analysis/trafficmap.dart';
 
 class SchedulePage extends StatefulWidget {
   const SchedulePage({super.key});
@@ -18,23 +13,29 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
-    late mongo.DbCollection tasksCollection;
-
+  late mongo.DbCollection tasksCollection;
+  
   List<Task> tasks = [
-    Task(
-      taskName: 'Task Name',
-      startTime: TimeOfDay.now(),
-      endTime: TimeOfDay.now(),
-      priority: 'Medium',
-    ),
+   
+   
+     
   ];
-    @override
-    void initState() {
-      super.initState();
-        _connectToMongo();
-    }
-    Future<void> _connectToMongo() async {
-    final db = await mongo.Db.create('mongodb+srv://giver_kdk:giverdb123@cluster0.lfo9ghw.mongodb.net/flowmi_db?retryWrites=true&w=majority&appName=Cluster0'); // Replace with your MongoDB URI
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      _isLoading = true;
+    });
+    _connectToMongo();
+  }
+
+  Future<void> _connectToMongo() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final db = await mongo.Db.create(
+        'mongodb+srv://giver_kdk:giverdb123@cluster0.lfo9ghw.mongodb.net/flowmi_db?retryWrites=true&w=majority&appName=Cluster0'); 
     await db.open();
     tasksCollection = db.collection('tasks');
     await _fetchTasks();
@@ -42,13 +43,14 @@ class _SchedulePageState extends State<SchedulePage> {
 
   Task fromMap(Map<String, dynamic> map) {
     return Task(
-		taskName: map["taskName"],
-		startTime: parseTime(map["startTime"]),
-		endTime: parseTime(map["endTime"]),
-		priority: map["priority"],
-	);
+      taskName: map["taskName"],
+      startTime: parseTime(map["startTime"]),
+      endTime: parseTime(map["endTime"]),
+      priority: map["priority"],
+    );
   }
-Map<String, dynamic> toMap(Task task) {
+
+  Map<String, dynamic> toMap(Task task) {
     return {
       'taskName': task.taskName,
       'startTime': task.startTime,
@@ -57,329 +59,225 @@ Map<String, dynamic> toMap(Task task) {
     };
   }
 
+  bool _isLoading = false;
+
   Future<void> _fetchTasks() async {
-    final tasksFromDb = await tasksCollection.find().toList();
-	print("FETCH**********");
-	// print(tasksFromDb);
-    setState(() {
-		tasks = tasksFromDb.map((map) => fromMap(map)).toList();
-		print(tasks[0].taskName);
-    });
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      final tasksFromDb = await tasksCollection.find().toList();
+      print("FETCH**********");
+      setState(() {
+        tasks = tasksFromDb.map((map) => fromMap(map)).toList();
+        print(tasks[0].taskName);
+        _isLoading = false;
+      });
+    } on Exception catch (e) {
+      print(e);
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
+      appBar: const PreferredSize(
+        preferredSize: Size.fromHeight(60),
         child: TopBar(title: 'Routine'),
       ),
-      body: Column(
-        children: <Widget>[
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFFF2F5FF),
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: <Widget>[
-                // buildTopNav(),
-                buildBottomafternav(),
-                buildScheduleIndicator(context),
-                buildHeading(),
-                
-                SizedBox(
-                  height: MediaQuery.of(context).size.height*0.55,
-                  child: buildTaskList(),
+      body: Container(
+        color: const Color(0xFFF2F5FF),
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              buildBottomafternav(),
+              buildScheduleIndicator(context),
+              buildHeading(),
+              // Use Expanded to let the task list fill available space
+              Expanded(
+                child: buildTaskList(),
+              ),
+              // Add Task button container at the bottom
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white, 
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20.0),
+                    topRight: Radius.circular(20.0),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 1,
+                      blurRadius: 7,
+                      offset: const Offset(0, -5), 
+                    ),
+                  ],
                 ),
-                // SizedBox(height: 20,),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                      color: Colors.white, // Optional: add background color if needed
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20.0),
-                        topRight: Radius.circular(20.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero, 
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50), 
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 7,
-                          offset: const Offset(0, -5), // changes position
-                        ),
-                      ],
                     ),
-                  child: ClipRRect( // Clip the rounded corners
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(15.0),
-                      topRight: Radius.circular(15.0),
-                    ),
-                    
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
+                    onPressed: () {
+                      GoRouter.of(context).push("/set_task");
+                    },
+                    child: Ink(
                       decoration: BoxDecoration(
-                          color: Colors.white, // Optional: add background color if needed
+                        gradient: const LinearGradient(
+                          colors: [purpleTheme, blueTheme],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0), // Inner padding
-                        child: Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.zero, // Removes default padding
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50), // Rounded corners
-                              ),
-                            ),
-                            // ************************ Add Task Button Event Handler ************************
-                            onPressed: () {
-                              GoRouter.of(context).push("/set_task");
-                            },
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [purpleTheme, blueTheme],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  '+ Add Task',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: smallText
-                                  ),
-                                ),
-                              ),
-                            ),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          '+ Add Task',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: smallText
                           ),
                         ),
                       ),
-                      ),
                     ),
-                  ),)
+                  ),
                 ),
-              ],
-              
-            ),
+              ),
+            ],
           ),
-          
-        ],
-        
-      ),   
-       
-      // IF GIVER LE COMMUTE PAGE KO FLOATING WINDOW BANAYENA VANE: USE THIS : floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // floatingActionButton: buildFloatingAddTaskButton(),
+        ),
+      ),
     );
   }
 
-//   Widget buildTopNav() {
-//   return Container(
-//     decoration: BoxDecoration(
-//       image: DecorationImage(
-//         image: AssetImage('assets/schedule/routebg.png'),
-//         fit: BoxFit.cover,
-//       ),
-//     ),
-//     child: Column(
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-//           child: Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//             children: <Widget>[
-//               IconButton(
-//                 icon: SvgPicture.asset('assets/schedule/left-icon.svg', color: Colors.white, height: 38, width: 38),
-//                 onPressed: () {
-//                   // Define the back button action, e.g., Navigator.pop(context);
-//                 },
-//               ),
-//               Expanded(
-//                 child: Text(
-//                   "Routine",
-//                   textAlign: TextAlign.center,
-//                   style: TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 24,
-//                     fontWeight: FontWeight.w600,
-//                     fontFamily: 'Poppins',
-//                   ),
-//                 ),
-//               ),
-//               Opacity(
-//                 opacity: 0,
-//                 child: IconButton(
-//                   icon: Icon(Icons.search),
-//                   onPressed: () {},
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//           // Add a SizedBox for spacing at the bottom
-//       ],
-//     ),
-//   );
-// }
-Widget buildBottomafternav() {
-  return SizedBox(
-    height: 35,
-  );
-}
-Widget buildScheduleIndicator(BuildContext context) {
-  
-            
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 5), // Different vertical padding
-    child: SizedBox(height: 70, // Adjusted for better proportionality
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16), // Padding inside the container for elements
-        decoration: BoxDecoration(
-          color: Colors.white, // Optional: add background color if needed
-          border: Border.all(
-            color: Colors.blue, // Color of the border
-            width: 2, // Width of the border
-          ),
-          borderRadius: BorderRadius.all(Radius.circular(50)), // Consistent rounded corners
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3), // Shadow color
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: Offset(0, 2), // Shadow position
+  Widget buildBottomafternav() {
+    return const SizedBox(
+      height: 35,
+    );
+  }
+
+  Widget buildScheduleIndicator(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 5),
+      child: SizedBox(
+        height: 70,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white, 
+            border: Border.all(
+              color: Colors.blue, 
+              width: 2, 
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min, // Center align the contents
-          children: <Widget>[
-            SvgPicture.asset(
-              'assets/schedule/average-indicator-home-icon.svg',
-              height: 48, // Slightly reduced to fit better within the new height
-              width: 48,
-            ),
-              SizedBox(
-                width: 16, // Gap between the icons and the progress bar
+            borderRadius: const BorderRadius.all(Radius.circular(50)), 
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3), 
+                spreadRadius: 2,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-           Expanded(
-             
-              child: ShaderMask(
-                shaderCallback: (Rect bounds) {
-                  return LinearGradient(
-                    colors: [Colors.green, Colors.red],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ).createShader(bounds);
-                },
-                child: LinearProgressIndicator(
-                  
-                  value: 0.5,
-                  backgroundColor: Colors.white.withOpacity(0.5),
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 10,
-                  // for border radius in progress bar
-                  borderRadius: BorderRadius.all(Radius.circular(30)),
-                  
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min, 
+            children: <Widget>[
+              SvgPicture.asset(
+                'assets/schedule/average-indicator-home-icon.svg',
+                height: 48,
+                width: 48,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return const LinearGradient(
+                      colors: [Colors.green, Colors.red],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ).createShader(bounds);
+                  },
+                  child: LinearProgressIndicator(
+                    value: 0.5,
+                    backgroundColor: Colors.white.withOpacity(0.5),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    minHeight: 10,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
+              const SizedBox(width: 16),
+              SvgPicture.asset(
+                'assets/schedule/average-indicator-destination-icon.svg',
+                height: 48,
+                width: 48,
               ),
-              SizedBox(
-                width: 16, // Gap between the icons and the progress bar
-              ),
-              
-            SvgPicture.asset(
-              'assets/schedule/average-indicator-destination-icon.svg',
-              height: 48, // Consistent size with the other icon
-              width: 48,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
- 
-}
+    );
+  }
 
-Widget buildHeading() {
-  return Container(
-    decoration: BoxDecoration(
-       border: Border(
-        bottom: BorderSide(
-          color:Colors.grey[300]!,
-          width: 1,
-        )
-       )
-    ),
-    child: Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 3),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: ShaderMask(
-              blendMode: BlendMode.srcIn,
-              shaderCallback: (bounds) => LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xFF4569DC), Color(0xFF9C27B0)],
-              ).createShader(Rect.fromLTWH(0.0, 0.0, bounds.width, bounds.height)),
-              child: Text(
-                "Today's Schedule",
-                style: TextStyle(
-                  fontSize: largerText,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
-                ),
+  Widget buildHeading() {
+    return Container(
+      decoration: BoxDecoration(
+         border: Border(
+          bottom: BorderSide(
+            color:Colors.grey[300]!,
+            width: 1,
+          )
+         )
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 3),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Color(0xFF4569DC), Color(0xFF9C27B0)],
+            ).createShader(Rect.fromLTWH(0.0, 0.0, bounds.width, bounds.height)),
+            child: const Text(
+              "Today's Schedule",
+              style: TextStyle(
+                fontSize: largerText,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
               ),
             ),
           ),
         ),
-         
-      ],
-    ),
-  );
-}
-
+      ),
+    );
+  }
 
   Widget buildTaskList() {
-  return ListView(
-    padding: const EdgeInsets.all(20),
-    children: tasks.map((task) {
-      return buildTask(task.taskName, formatTimeOfDay(task.startTime));
-    }).toList(),
-  );
-}
-
-// Widget buildTaskList() {
-//   return SizedBox.expand(
-//     child: ListView(
-//       padding: const EdgeInsets.all(20),
-//       children: <Widget>[
-//         buildTask("Workout", "08:00 AM"),
-//         buildTask("Eat Lunch", "10:00 AM"),
-//         buildTask("Iron Shirt", "10:45 AM"),
-//         buildTask("Drink Coffee", "10:50 AM"),
-//         buildTask("Departure", "11:00 AM"),
-//         buildTask("Departure", "11:00 AM"),
-//         buildTask("Departure", "11:00 AM"),
-//       ],
-//     ),
-//   );
-// }
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: tasks.map((task) {
+        return buildTask(task.taskName, formatTimeOfDay(task.startTime));
+      }).toList(),
+    );
+  }
 
   Widget buildTask(String name, String time) {
     return Container(
-      padding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
       height: 88.0,
       width: 349.0,
       margin: const EdgeInsets.only(bottom: 8),
@@ -391,7 +289,7 @@ Widget buildHeading() {
             color: Colors.grey.withOpacity(0.4),
             spreadRadius: 1,
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -401,131 +299,15 @@ Widget buildHeading() {
           height: 38,
           width: 38,
         ),
-        title: Text(name, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(time),
-        trailing: Icon(Icons.more_vert),
+        trailing: const Icon(Icons.more_vert),
       ),
     );
   }
-//  Widget buildBottomNav(BuildContext  context) {
-//     return BottomAppBar(
-//       color: Colors.white.withOpacity(0.5),
-//       child: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceAround,
-//         children: <Widget>[
-//           SvgPicture.asset(
-//             'assets/schedule/calendericon.svg',
-//             height: 24,
-//             width: 24,
-//           ),
-//           IconButton(
-//             icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
-//             onPressed: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(builder: (context) => RoutePlanner()),
-//               );
-//             },
-//           ),
-           
-//           IconButton(
-//             icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
-//             onPressed: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(builder: (context) => RoutePlanner()),
-//               );
-//             },
-//           ),
-           
-//            IconButton(
-//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
-//   onPressed: () {
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(builder: (context) => CommuteAnalysisPage()), // Navigating to MyBarChart
-//     );
-//   },
-// ),
-//           IconButton(
-//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
-//   onPressed: () {
-//     // Navigator push method to navigate to the new page
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(builder: (context) => ManageNotificationsPage()), // NewPage is the destination page
-//     );
-//   },
-// ),
-// IconButton(
-  
+}
 
-//   icon: SvgPicture.asset('assets/schedule/calendericon.svg', height: 24, width: 24),
-//   onPressed: () {
-//     // Navigator push method to navigate to the new page
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(builder: (context) => LoginPage()), // NewPage is the destination page
-//     );
-//   },
-// ),
-
-
-           
-//         ],
-//       ),
-//     );
-  }
-  // IF GIVER LE COMMUTE PAGE KO FLOATING WINDOW BANAYENA VANE: USE THIS :
-  // THINGS TO DO: THAKKYA BOTTOM WIDGET KO MATHI SATAUNE SAME COLOR USE GARERA, 
-  //JUST RUN AND SEE YOUTSELF
-  //
-  //
-  // Widget buildFloatingAddTaskButton() {
-  //   return Container(
-  //     width: double.infinity, // Ensures the button stretches to match the screen width
-  //     padding: EdgeInsets.symmetric(vertical: 60), // Padding above and below the button
-  //     decoration: BoxDecoration(
-  //       color: const Color.fromARGB(10, 104, 58, 183), // Background color of the button
-  //       borderRadius: BorderRadius.only(
-  //         topLeft: Radius.circular(10),
-  //         topRight: Radius.circular(10),
-  //       ),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black12,
-  //           blurRadius: 8,
-  //           spreadRadius: 4,
-  //           offset: Offset(0, 4),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Container(
-  //       width: 10,
-  //       height: 60,
-  //       decoration: BoxDecoration(
-  //         color: const Color.fromARGB(255, 104, 58, 183),
-  //         borderRadius: BorderRadius.circular(20),
-  //       ),
-  //       child: TextButton(
-  //         onPressed: () {
-  //           // Define the button action here
-  //         },
-  //         child: Text(
-  //           "+ Add Task",
-  //           style: TextStyle(
-  //             color: Colors.white,
-  //             fontWeight: FontWeight.bold,
-  //             fontSize: 18,
-  //           ),
-  //       ),
-  //     ),
-  //     ),
-  //   );
-  // }
-
-// }
- class Task {
+class Task {
   String taskName;
   TimeOfDay startTime;
   TimeOfDay endTime;
@@ -538,8 +320,8 @@ Widget buildHeading() {
     required this.priority,
   });
 }
+
 TimeOfDay parseTime(String timeString) {
-  // Parse the string to extract the hour and minute
   final format = RegExp(r'(\d+):(\d+)\s*(AM|PM)', caseSensitive: false);
   final match = format.firstMatch(timeString);
 
@@ -548,11 +330,9 @@ TimeOfDay parseTime(String timeString) {
     int minute = int.parse(match.group(2)!);
     String period = match.group(3)!.toUpperCase();
 
-    // Convert to 24-hour format if PM
     if (period == "PM" && hour != 12) {
       hour += 12;
     }
-    // Adjust for midnight (12:00 AM)
     if (period == "AM" && hour == 12) {
       hour = 0;
     }
@@ -562,10 +342,10 @@ TimeOfDay parseTime(String timeString) {
     throw FormatException("Invalid time format: $timeString");
   }
 }
-String formatTimeOfDay(TimeOfDay time) {
-  final String hour = time.hourOfPeriod.toString().padLeft(2, '0'); // Ensures 2-digit hour
-  final String minute = time.minute.toString().padLeft(2, '0'); // Ensures 2-digit minute
-  final String period = time.period == DayPeriod.am ? "AM" : "PM";
 
+String formatTimeOfDay(TimeOfDay time) {
+  final String hour = time.hourOfPeriod.toString().padLeft(2, '0');
+  final String minute = time.minute.toString().padLeft(2, '0');
+  final String period = time.period == DayPeriod.am ? "AM" : "PM";
   return "$hour:$minute $period";
 }

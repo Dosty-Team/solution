@@ -1,6 +1,22 @@
   final List<Map<String, String>> camData = [
     {
       // In practical, the image link should be an api requets to nodejs backend
+      'image': 'https://res.cloudinary.com/dbd87ggdm/image/upload/v1734197058/hjxvv5cda3ufyghnmdff.png',
+      'title': 'Jamal',
+      'traffic': 'Medium',
+      'weather': 'Sunny',
+      'cam': 'jamal'
+    },
+    {
+      // In practical, the image link should be an api requets to nodejs backend
+      'image': 'https://res.cloudinary.com/dbd87ggdm/image/upload/v1734197058/xocsgl02wlzves4njfm4.png',
+      'title': 'Jamal 2',
+      'traffic': 'Medium',
+      'weather': 'Sunny',
+      'cam': 'jamal'
+    },
+    {
+      // In practical, the image link should be an api requets to nodejs backend
       'image': 'https://res.cloudinary.com/dungychip/image/upload/v1733831015/swoyambhu-road_eaibiq.png',
       'title': 'Swoyambhu',
       'traffic': 'Medium',

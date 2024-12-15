@@ -1,56 +1,83 @@
+import 'dart:async'; // Add this for Timer
 import 'dart:developer';
-import 'package:flowmi/components/top_bar/top_bar.dart';
-import 'package:flowmi/my_styles.dart';
+import 'package:flowmi/pages/analysis/chart_area.dart';
+import 'package:flowmi/pages/analysis/trafficservice.dart';
+import 'package:flowmi/pages/set_commute_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// import 'package:/analysis/trafficservice.dart';
-import "./trafficservice.dart";
-import 'chart_area.dart';
+
+import '../set_commute_source_and_destination.dart';
 
 class CommuteAnalysisPage extends StatefulWidget {
+  const CommuteAnalysisPage({super.key});
+
   @override
   _CommuteAnalysisPageState createState() => _CommuteAnalysisPageState();
 }
 
 class _CommuteAnalysisPageState extends State<CommuteAnalysisPage> {
-  List<String> _times = [];
-  List<double> _heights = [];
-  List<String> _categories = [];
+  // Data for multiple routes
+  List<_RouteChartData> _routeChartsData = [];
   int _interval = 10; // Interval between measurements in minutes
+  bool _isGenerating = false;
 
-  bool get isChartDataValid => _times.isNotEmpty && _heights.isNotEmpty && _times.length == _heights.length;
+  // Countdown related variables
+  int _countdown = 7;
+  Timer? _countdownTimer;
 
-  // Example origin/destination. Replace these with desired coordinates/addresses.
-  String origin = "24.85085,67.01778";
-  String destination = "24.8657238,67.0142184";
+  bool get isChartDataValid => _routeChartsData.isNotEmpty && _routeChartsData.any((r) => r.times.isNotEmpty);
+
+  String origin = "27.7148996,85.29039569999999";
+  String destination = "27.6915196,85.3420486";
 
   Future<void> _generateChartFromAPI() async {
-    log('Fetching data from API...');
+    log('Start generating chart from API...');
 
-    final baselineTime = DateTime(2024, 12, 14, 3, 0);
+    // Set a baseline time in the future
+    final baselineTime = DateTime.now().toUtc().add(Duration(days: 1, hours: 3 - DateTime.now().hour));
+    log('Baseline time: $baselineTime');
+
+    // Fetch baseline travel time
     final baselineTravelTimes = await fetchTravelTime(origin, destination, baselineTime);
     if (baselineTravelTimes == null || baselineTravelTimes.isEmpty) {
       _showError("Could not retrieve baseline travel time.");
       return;
     }
 
-    final baselineTravelTime = baselineTravelTimes[0][0]; // first route's first leg
+    final baselineTravelTime = baselineTravelTimes[0][0];
+    log('Baseline travel time (minutes): $baselineTravelTime');
 
-    final initialTime = DateTime.now().toUtc();
+    // Generate 6 time slots spaced by _interval minutes
+    final initialTime = DateTime.now().toUtc().add(const Duration(minutes: 5));
+    log('Initial time (UTC): $initialTime');
+
     final timesToCheck = List.generate(6, (i) => initialTime.add(Duration(minutes: i * _interval)));
+    log('Times to check: $timesToCheck');
 
+    // Fetch travel times for each of the 6 times
     List<List<List<double>>?> allTravelTimes = [];
     for (var t in timesToCheck) {
+      log('Fetching travel times for $t');
       var tt = await fetchTravelTime(origin, destination, t);
       if (tt == null) {
+        log('Failed to fetch travel times for $t');
         _showError("Could not retrieve travel times for all time slots.");
         return;
       }
+      log('Fetched travel times for $t: $tt');
       allTravelTimes.add(tt);
     }
 
-    // We have data structured by time, we need to reorganize by route:
+    // Determine how many routes we have
     final routeCount = allTravelTimes[0]?.length ?? 0;
+    log('Number of routes found: $routeCount');
+
+    if (routeCount == 0) {
+      log('No routes were returned by the API.');
+      _showError("No routes found.");
+      return;
+    }
+
     // Group data by route
     List<List<List<double>>> routeWiseData = [];
     for (int r = 0; r < routeCount; r++) {
@@ -58,45 +85,67 @@ class _CommuteAnalysisPageState extends State<CommuteAnalysisPage> {
       for (var slot in allTravelTimes) {
         routeOverTime.add(slot![r]);
       }
+      log('Route ${r+1} data over time: $routeOverTime');
       routeWiseData.add(routeOverTime);
     }
 
-    // Analyze traffic by route
+    // Analyze traffic for each route
     final routeTrafficAnalysis = analyzeTraffic(routeWiseData, baselineTravelTime);
 
-    // For demonstration, pick the first route:
-    final firstRouteData = routeTrafficAnalysis[0];
+    // Build charts data for each route
+    List<_RouteChartData> routeCharts = [];
+    for (int routeIndex = 0; routeIndex < routeTrafficAnalysis.length; routeIndex++) {
+      final routeData = routeTrafficAnalysis[routeIndex];
+      log('Route ${routeIndex+1} analysis data: $routeData');
 
-    // Extract times and extra_time to form chart data
-    List<String> chartTimes = [];
-    List<double> chartHeights = [];
-    List<String> chartCategories = [];
+      if (routeData.isEmpty) {
+        log('Route ${routeIndex+1} has no data.');
+        continue;
+      }
 
-    for (int i = 0; i < firstRouteData.length; i++) {
-      final analysis = firstRouteData[i];
-      double extraTime = analysis['extra_time'];
-      String category = analysis['category'];
+      List<String> chartTimes = [];
+      List<double> chartHeights = [];
+      List<String> chartCategories = [];
 
-      double height = extraTime;
-      // Clamp height between 0 and 100 for display
-      if (height < 0) height = 0; 
-      if (height > 100) height = 100;
+      for (int i = 0; i < routeData.length; i++) {
+        final analysis = routeData[i];
+        double extraTime = analysis['extra_time'];
+        String category = analysis['category'];
 
-      DateTime t = timesToCheck[i].toLocal();
-      String formattedTime = DateFormat('HH:mm').format(t);
-      chartTimes.add(formattedTime);
-      chartHeights.add(height);
-      chartCategories.add(category);
+        log('Time slot $i: extra_time=$extraTime, category=$category');
+
+        double height = extraTime;
+        if (height < 0) height = 0;
+        if (height > 100) height = 100;
+
+        DateTime t = timesToCheck[i].toLocal();
+        String formattedTime = DateFormat('h:mm a').format(t);
+        chartTimes.add(formattedTime);
+        chartHeights.add(height);
+        chartCategories.add(category);
+      }
+
+      log('Route ${routeIndex+1} chart times: $chartTimes');
+      log('Route ${routeIndex+1} chart heights: $chartHeights');
+      log('Route ${routeIndex+1} chart categories: $chartCategories');
+
+      routeCharts.add(_RouteChartData(
+        routeName: "Route ${routeIndex + 1}",
+        times: chartTimes,
+        heights: chartHeights,
+        categories: chartCategories,
+      ));
     }
 
     setState(() {
-      _times = chartTimes;
-      _heights = chartHeights;
-      _categories = chartCategories;
+      _routeChartsData = routeCharts;
     });
+
+    log('Completed chart generation. Number of routes in charts: ${_routeChartsData.length}');
   }
 
   void _showError(String message) {
+    log('Showing error: $message');
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -115,93 +164,199 @@ class _CommuteAnalysisPageState extends State<CommuteAnalysisPage> {
     );
   }
 
+  void _startCountdown() {
+    _countdown = 7; // reset countdown to 7
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdown > 1 && mounted && _isGenerating) {
+        setState(() {
+          _countdown--;
+        });
+      } else {
+        // Stop the timer either when countdown reaches 1 or if no longer generating
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final maxWidth = 400.0;
 
+    log('Building UI. isChartDataValid: $isChartDataValid');
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: TopBar(title: 'Commute Analysis'),
-      ),
       body: Container(
         decoration: const BoxDecoration(
-          color: lightBlueBG,
+          gradient: LinearGradient(
+            colors: [Color(0xFF6a11cb), Color(0xFF2575fc)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-        child: Container(
+        child: Center(
+          child: Container(
             width: maxWidth,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(7),
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // Header Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          log('Back button pressed.');
+                          Navigator.pop(context);
+                        },
+                      ),
+                      const Text(
+                        'Commute Analysis',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                      const SizedBox(width: 48), // Spacer
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
                   ElevatedButton(
-                    onPressed: _generateChartFromAPI,
+                    onPressed: () async {
+                      setState(() {
+                        _isGenerating = true;
+                      });
+                      _startCountdown();
+
+                      final coordinates = await DatabaseService().fetchData();
+                      if (coordinates.isEmpty) {
+                        log('No coordinates found in the database.');
+                        _showError('No coordinates found in the database.');
+                        setState(() {
+                          _isGenerating = false;
+                        });
+                        return;
+                      }
+
+                      // Extract coordinates from DB results
+                      origin = '${coordinates[1][0]},${coordinates[1][1]}';
+                      destination = '${coordinates[0][0]},${coordinates[0][1]}';
+                      print('in trafficmap.dart Using coordinates from database: origin: $origin, destination: $destination');
+
+                      await _generateChartFromAPI();
+
+                      setState(() {
+                        _isGenerating = false;
+                      });
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                     ),
-                    child: const Text('Generate Chart from API'),
+                    child: _isGenerating
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(width: 10),
+                              Text('$_countdown'),
+                            ],
+                          )
+                        : const Text('Generate Charts from API'),
                   ),
 
                   const SizedBox(height: 20),
-                  // Chart Display Card
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          offset: const Offset(0, 4),
-                          blurRadius: 8,
-                          color: Colors.black.withOpacity(0.1),
-                        )
-                      ],
+                  // Display a chart card for each route
+                  if (_routeChartsData.isEmpty)
+                    Container(
+                      height: 200,
+                      alignment: Alignment.center,
+                      child: const Text('No Data', style: TextStyle(color: Colors.white)),
+                    )
+                  else
+                    Column(
+                      children: _routeChartsData.map((routeData) {
+                        log('Rendering chart for ${routeData.routeName} with ${routeData.times.length} bars');
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                offset: const Offset(0, 4),
+                                blurRadius: 8,
+                                color: Colors.black.withOpacity(0.1),
+                              )
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(15),
+                          child: Column(
+                            children: [
+                              // Card Header
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    routeData.routeName,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF9c27b0),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Optimal',
+                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 15),
+                              // Chart Area for this route
+                              ChartArea(
+                                times: routeData.times,
+                                heights: routeData.heights,
+                                categories: routeData.categories,
+                                interval: _interval,
+                                isChartDataValid: routeData.times.isNotEmpty && routeData.heights.isNotEmpty,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    padding: const EdgeInsets.all(15),
-                    child: Column(
-                      children: [
-                        // Card Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Route 1',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF9c27b0),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Optimal',
-                                style: TextStyle(color: Colors.white, fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 15),
-                        // Chart Area
-                        ChartArea(
-                          times: _times,
-                          heights: _heights,
-                          categories: _categories,
-                          interval: _interval,
-                          isChartDataValid: isChartDataValid,
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
+        ),
       ),
     );
   }
+}
+
+class _RouteChartData {
+  final String routeName;
+  final List<String> times;    // 6 timeslots
+  final List<double> heights;  // 6 bars heights
+  final List<String> categories; // 6 categories
+
+  _RouteChartData({
+    required this.routeName,
+    required this.times,
+    required this.heights,
+    required this.categories,
+  });
 }
